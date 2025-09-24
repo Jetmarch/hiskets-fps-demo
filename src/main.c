@@ -2,6 +2,9 @@
 #include "player.h"
 #include "level.h"
 
+#include "rlgl.h"
+
+
 
 int main(void)
 {
@@ -27,8 +30,18 @@ int main(void)
 
     SetTargetFPS(60);
 
-	Vector3 towerSize = (Vector3){ 16.0f, 32.0f, 16.0f };
-    Vector3 towerPos = (Vector3){ 0.0f, 0.0f, 0.0f };
+    Vector3 wallSize = (Vector3){ 16.0f, 16.0f,  16.0f };
+    Mesh wallMesh = GenMeshCube(wallSize.x, wallSize.y, wallSize.z);
+    Model wallModel = LoadModelFromMesh(wallMesh);
+    Texture2D wallTexture = LoadTexture("resources/textures/damaged_plaster_diff_1k.jpg");
+    wallModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = wallTexture;
+
+    Vector3 wallPos  = (Vector3){  0.0f,  8.0f, -32.0f };
+
+
+    Model weaponModel = LoadModel("resources/models/mp5.obj");
+    Texture2D weaponTexture = LoadTexture("resources/textures/weapons/mp5.png");
+    weaponModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = weaponTexture;
 
 	bool isMouseWasPressed = false;
 	Ray shootRay;
@@ -51,7 +64,10 @@ int main(void)
 			};
 			shootRay = GetScreenToWorldRay(screenCenter, camera);
 
-			shootCollision = GetRayCollisionBox(shootRay, (BoundingBox){ (Vector3){ -towerSize.x/2, -towerSize.y/2, -towerSize.z/2 }, (Vector3){ towerSize.x/2, towerSize.y/2, towerSize.z/2 } });
+			shootCollision = GetRayCollisionBox(shootRay, (BoundingBox){
+                (Vector3){ -wallSize.x/2 + wallPos.x, -wallSize.y/2 + wallPos.y, -wallSize.z/2 + wallPos.z }, 
+                (Vector3){  wallSize.x/2 + wallPos.x,  wallSize.y/2 + wallPos.y,  wallSize.z/2 + wallPos.z } 
+            });
 
 			if(shootCollision.hit)
 			{
@@ -65,19 +81,24 @@ int main(void)
         //----------------------------------------------------------------------------------
         BeginDrawing();
 
-            ClearBackground(RAYWHITE);
+            ClearBackground(GRAY);
 
             BeginMode3D(camera);
                 DrawLevel();
 
-				DrawCube(towerPos, towerSize.x, towerSize.y, towerSize.z, GRAY);
-				DrawCubeWires(towerPos, towerSize.x, towerSize.y, towerSize.z, MAROON);
+				// DrawCube(towerPos, towerSize.x, towerSize.y, towerSize.z, GRAY);
+				DrawCubeWires(wallPos, wallSize.x, wallSize.y, wallSize.z, MAROON);
 
 				if(shootCollision.hit)
 				{
 					DrawSphere(shootCollision.point, 0.1f, BLUE);
 					DrawLine3D(shootCollision.point, Vector3Add(shootCollision.point, Vector3Scale(shootCollision.normal, 0.5f)), GREEN);
 				}
+
+                DrawModel(weaponModel, (Vector3){0.0f, 5.0f, 0.0f}, 1.0f, WHITE);
+                DrawModel(wallModel, wallPos, 1.0f, WHITE);
+
+
             EndMode3D();
 
             DrawRectangle(5, 5, 330, 90, Fade(SKYBLUE, 0.5f));
@@ -99,6 +120,11 @@ int main(void)
     }
 
     CloseWindow();
+
+    UnloadTexture(wallTexture);
+    UnloadModel(weaponModel);
+    UnloadModel(wallModel);
+
 
     return 0;
 }
