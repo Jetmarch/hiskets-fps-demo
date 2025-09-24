@@ -10,6 +10,7 @@
 	},
 	"files.associations": {
 		"raymath.h": "c",
-		"raylib.h": "c"
+		"raylib.h": "c",
+		"player.h": "c"
 	}
 }
