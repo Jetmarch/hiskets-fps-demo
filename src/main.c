@@ -1,19 +1,10 @@
 
 #include "player.h"
+#include "level.h"
 
 
-//----------------------------------------------------------------------------------
-// Module Functions Declaration
-//----------------------------------------------------------------------------------
-static void DrawLevel(void);
-
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
 int main(void)
 {
-    // Initialization
-    //--------------------------------------------------------------------------------------
     const int screenWidth = 1270;
     const int screenHeight = 920;
 
@@ -35,12 +26,40 @@ int main(void)
     DisableCursor();
 
     SetTargetFPS(60);
+
+	Vector3 towerSize = (Vector3){ 16.0f, 32.0f, 16.0f };
+    Vector3 towerPos = (Vector3){ 0.0f, 0.0f, 0.0f };
+
+	bool isMouseWasPressed = false;
+	Ray shootRay;
+	RayCollision shootCollision;
     //--------------------------------------------------------------------------------------
 
-    // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
+		// Update state
+        //----------------------------------------------------------------------------------
 		UpdatePlayer(&camera, &playerBody);
+
+		if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+		{
+			isMouseWasPressed = !isMouseWasPressed;
+			TraceLog(LOG_INFO, "Mouse was pressed, yeah");
+			Vector2 screenCenter = (Vector2) {
+				screenWidth / 2,
+				screenHeight/ 2
+			};
+			shootRay = GetScreenToWorldRay(screenCenter, camera);
+
+			shootCollision = GetRayCollisionBox(shootRay, (BoundingBox){ (Vector3){ -towerSize.x/2, -towerSize.y/2, -towerSize.z/2 }, (Vector3){ towerSize.x/2, towerSize.y/2, towerSize.z/2 } });
+
+			if(shootCollision.hit)
+			{
+				TraceLog(LOG_INFO, "Hitted that box!");
+			}
+		}
+
+		
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -50,73 +69,36 @@ int main(void)
 
             BeginMode3D(camera);
                 DrawLevel();
+
+				DrawCube(towerPos, towerSize.x, towerSize.y, towerSize.z, GRAY);
+				DrawCubeWires(towerPos, towerSize.x, towerSize.y, towerSize.z, MAROON);
+
+				if(shootCollision.hit)
+				{
+					DrawSphere(shootCollision.point, 0.1f, BLUE);
+					DrawLine3D(shootCollision.point, Vector3Add(shootCollision.point, Vector3Scale(shootCollision.normal, 0.5f)), GREEN);
+				}
             EndMode3D();
 
-            // Draw info box
-            DrawRectangle(5, 5, 330, 75, Fade(SKYBLUE, 0.5f));
-            DrawRectangleLines(5, 5, 330, 75, BLUE);
+            DrawRectangle(5, 5, 330, 90, Fade(SKYBLUE, 0.5f));
+            DrawRectangleLines(5, 5, 330, 90, BLUE);
 
             DrawText("Camera controls:", 15, 15, 10, BLACK);
             DrawText("- Move keys: W, A, S, D, Space, Left-Ctrl", 15, 30, 10, BLACK);
             DrawText("- Look around: arrow keys or mouse", 15, 45, 10, BLACK);
             DrawText(TextFormat("- Velocity Len: (%06.3f)", Vector2Length((Vector2){ playerBody.velocity.x, playerBody.velocity.z })), 15, 60, 10, BLACK);
+			DrawText(TextFormat("- FPS: (%i)", GetFPS()), 15, 75, 10, BLACK);
+
+
+			DrawText(TextFormat("- IsMouseWasPressed: (%d)", isMouseWasPressed), 15, 110, 10, BLACK);
+
+			
 
         EndDrawing();
         //----------------------------------------------------------------------------------
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
+    CloseWindow();
 
     return 0;
-}
-
-
-
-// Draw game level
-static void DrawLevel(void)
-{
-    const int floorExtent = 25;
-    const float tileSize = 5.0f;
-    const Color tileColor1 = (Color){ 150, 200, 200, 255 };
-
-    // Floor tiles
-    for (int y = -floorExtent; y < floorExtent; y++)
-    {
-        for (int x = -floorExtent; x < floorExtent; x++)
-        {
-            if ((y & 1) && (x & 1))
-            {
-                DrawPlane((Vector3){ x*tileSize, 0.0f, y*tileSize}, (Vector2){ tileSize, tileSize }, tileColor1);
-            }
-            else if (!(y & 1) && !(x & 1))
-            {
-                DrawPlane((Vector3){ x*tileSize, 0.0f, y*tileSize}, (Vector2){ tileSize, tileSize }, LIGHTGRAY);
-            }
-        }
-    }
-
-    const Vector3 towerSize = (Vector3){ 16.0f, 32.0f, 16.0f };
-    const Color towerColor = (Color){ 150, 200, 200, 255 };
-
-    Vector3 towerPos = (Vector3){ 16.0f, 16.0f, 16.0f };
-    DrawCubeV(towerPos, towerSize, towerColor);
-    DrawCubeWiresV(towerPos, towerSize, DARKBLUE);
-
-    towerPos.x *= -1;
-    DrawCubeV(towerPos, towerSize, towerColor);
-    DrawCubeWiresV(towerPos, towerSize, DARKBLUE);
-
-    towerPos.z *= -1;
-    DrawCubeV(towerPos, towerSize, towerColor);
-    DrawCubeWiresV(towerPos, towerSize, DARKBLUE);
-
-    towerPos.x *= -1;
-    DrawCubeV(towerPos, towerSize, towerColor);
-    DrawCubeWiresV(towerPos, towerSize, DARKBLUE);
-
-    // Red sun
-    DrawSphere((Vector3){ 300.0f, 300.0f, 0.0f }, 100.0f, (Color){ 255, 0, 0, 255 });
 }
