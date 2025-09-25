@@ -46,13 +46,17 @@ int main(void)
 	bool isMouseWasPressed = false;
 	Ray shootRay;
 	RayCollision shootCollision;
+
+
+    bool isFlyCam = false;
     //--------------------------------------------------------------------------------------
 
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
 		// Update state
         //----------------------------------------------------------------------------------
-		UpdatePlayer(&camera, &playerBody);
+        
+        
 
 		if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
 		{
@@ -74,6 +78,20 @@ int main(void)
 				TraceLog(LOG_INFO, "Hitted that box!");
 			}
 		}
+
+        if(IsKeyPressed(KEY_T))
+        {
+            isFlyCam = !isFlyCam;
+        }
+
+        if(!isFlyCam)
+        {
+		    UpdatePlayer(&camera, &playerBody);
+        }
+        else 
+        {
+            UpdateCamera(&camera, CAMERA_FREE);
+        }
 
 		
 
