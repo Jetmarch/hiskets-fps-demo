@@ -96,6 +96,18 @@
                 "command": "premake5.osx"
             },
             "group": "build"
+        },
+        {
+            "label": "Run (Debug)",
+            "type": "process",
+            "command": "./${workspaceFolderBasename}.exe",
+            "options": {
+                "cwd": "${workspaceFolder}/bin/Debug/"
+            },
+            "windows": {
+                "command": "./${workspaceFolderBasename}.exe"
+            },
+            "group": "test"
         }
     ]
 }
