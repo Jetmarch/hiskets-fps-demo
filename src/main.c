@@ -2,9 +2,72 @@
 #include "player.h"
 #include "level.h"
 
-#include "rlgl.h"
+typedef struct {
+    Model model;
+    Vector3 baseOffset;
+    Vector3 currentOffset;
+    float recoilTimer;
+    bool isShooting;
+} FPSWeapon;
 
+FPSWeapon CreateFPSWeapon(Model model, Vector3 offset)
+{
+    FPSWeapon weapon;
+    weapon.model = model;
+    weapon.baseOffset = offset;
+    weapon.currentOffset = offset;
+    weapon.recoilTimer = 0.0f;
+    weapon.isShooting = false;
+    return weapon;
+}
 
+void UpdateWeapon(FPSWeapon *weapon, Camera camera)
+{
+    if (weapon->isShooting)
+    {
+        weapon->recoilTimer += GetFrameTime();
+        
+        float recoilProgress = weapon->recoilTimer / 0.1f;
+        if (recoilProgress < 1.0f)
+        {
+            weapon->currentOffset.z = weapon->baseOffset.z - 0.1f * sinf(recoilProgress * PI);
+        }
+        else
+        {
+            weapon->currentOffset.z = weapon->baseOffset.z;
+            weapon->isShooting = false;
+            weapon->recoilTimer = 0.0f;
+        }
+    }
+}
+
+Vector3 GetCameraEulerAngles(Camera camera)
+{
+    Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, camera.up));
+    Vector3 up = Vector3CrossProduct(right, forward);
+    
+    Vector3 angles;
+    
+    angles.y = atan2f(forward.x, forward.z);
+    
+    angles.x = asinf(-forward.y);
+    
+    angles.z = 0.0f;
+    
+    return angles;
+}
+
+void DrawFPSWeapon(FPSWeapon *weapon, Camera3D camera)
+{
+    Vector3 cameraAngles = GetCameraEulerAngles(camera);
+
+    Vector3 weaponPos = Vector3Add(camera.position, weapon->currentOffset);
+
+    weapon->model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * cameraAngles.x, DEG2RAD * cameraAngles.y, cameraAngles.z});
+
+    DrawModel(weapon->model, weaponPos, 0.01f, GRAY);
+}
 
 int main(void)
 {
@@ -13,8 +76,6 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "raylib [core] example - 3d camera fps");
 
-    // Initialize camera variables
-    // NOTE: UpdateCameraFPS() takes care of the rest
     Camera camera = { 0 };
     camera.fovy = 60.0f;
     camera.projection = CAMERA_PERSPECTIVE;
@@ -36,12 +97,15 @@ int main(void)
     Texture2D wallTexture = LoadTexture("resources/textures/damaged_plaster_diff_1k.jpg");
     wallModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = wallTexture;
 
-    Vector3 wallPos  = (Vector3){  0.0f,  8.0f, -32.0f };
+    Vector3 wallPos  = (Vector3){ 0.0f, 8.0f, -32.0f };
 
 
     Model weaponModel = LoadModel("resources/models/mp5.obj");
     Texture2D weaponTexture = LoadTexture("resources/textures/weapons/mp5.png");
     weaponModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = weaponTexture;
+    Vector3 weaponPositionOffset = (Vector3){0.2f, -0.35f, -0.4f};
+
+    FPSWeapon weapon = CreateFPSWeapon(weaponModel, weaponPositionOffset);
 
 	bool isMouseWasPressed = false;
 	Ray shootRay;
@@ -56,8 +120,6 @@ int main(void)
 		// Update state
         //----------------------------------------------------------------------------------
         
-        
-
 		if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
 		{
 			isMouseWasPressed = !isMouseWasPressed;
@@ -77,6 +139,8 @@ int main(void)
 			{
 				TraceLog(LOG_INFO, "Hitted that box!");
 			}
+
+            weapon.isShooting = true;
 		}
 
         if(IsKeyPressed(KEY_T))
@@ -92,6 +156,8 @@ int main(void)
         {
             UpdateCamera(&camera, CAMERA_FREE);
         }
+
+        UpdateWeapon(&weapon, camera);
 
 		
 
@@ -112,9 +178,12 @@ int main(void)
 					DrawSphere(shootCollision.point, 0.1f, BLUE);
 					DrawLine3D(shootCollision.point, Vector3Add(shootCollision.point, Vector3Scale(shootCollision.normal, 0.5f)), GREEN);
 				}
+                
 
-                DrawModel(weaponModel, (Vector3){0.0f, 5.0f, 0.0f}, 1.0f, WHITE);
+                // DrawModel(weaponModel, weaponPosition, 0.01f, WHITE);
                 DrawModel(wallModel, wallPos, 1.0f, WHITE);
+
+                DrawFPSWeapon(&weapon, camera);
 
 
             EndMode3D();
