@@ -6,7 +6,12 @@ typedef struct {
     Model model;
     Vector3 baseOffset;
     Vector3 currentOffset;
+    Vector3 recoilDirection;
     float recoilTimer;
+    float recoilStrength;
+    float recoilPositionRecover;
+    float recoilAngleRecover;
+    float recoilAngle;
     bool isShooting;
 } FPSWeapon;
 
@@ -16,7 +21,12 @@ FPSWeapon CreateFPSWeapon(Model model, Vector3 offset)
     weapon.model = model;
     weapon.baseOffset = offset;
     weapon.currentOffset = offset;
+    weapon.recoilDirection = (Vector3){0.5f, 0.1f, 0.0f};
     weapon.recoilTimer = 0.0f;
+    weapon.recoilStrength = 1.0f;
+    weapon.recoilPositionRecover = 45.0f;
+    weapon.recoilAngleRecover = 7.5f;
+    weapon.recoilAngle = 0.0f;
     weapon.isShooting = false;
     return weapon;
 }
@@ -30,11 +40,11 @@ void UpdateWeapon(FPSWeapon *weapon, Camera camera)
         float recoilProgress = weapon->recoilTimer / 0.1f;
         if (recoilProgress < 1.0f)
         {
-            weapon->currentOffset.z = weapon->baseOffset.z - 0.1f * sinf(recoilProgress * PI);
+            weapon->currentOffset.z = weapon->baseOffset.z + weapon->recoilStrength * sinf(recoilProgress * PI);
         }
         else
         {
-            weapon->currentOffset.z = weapon->baseOffset.z;
+            weapon->currentOffset.z = Lerp(weapon->currentOffset.z, weapon->baseOffset.z, GetFrameTime() * weapon->recoilPositionRecover) ;
             weapon->isShooting = false;
             weapon->recoilTimer = 0.0f;
         }
@@ -177,6 +187,9 @@ int main(void)
 
         UpdateWeapon(&weapon, worldCamera);
 
+
+        //Weapon sway
+        //----------------------------------------------------------------------------------
         bool isMoving = Vector3Length(playerBody.velocity) > weaponSwayVelocityTreshhold;
 
         if(isMoving)
@@ -194,7 +207,24 @@ int main(void)
         float swayY = cosf(weaponSwayTime * 2.0f) * 0.05f * currentWeaponSwayAmount;
 
         Vector3 weaponSway = (Vector3) {swayX, swayY, 0.0f};
-        
+        //----------------------------------------------------------------------------------
+
+        //Weapon recoil
+        //----------------------------------------------------------------------------------
+        if(weapon.isShooting)
+        {
+            weapon.recoilAngle += weapon.recoilStrength;
+        }
+
+        if(weapon.recoilAngle > 0.0f)
+        {
+            weapon.recoilAngle -= GetFrameTime() * weapon.recoilAngleRecover * weapon.recoilAngle;
+            if(weapon.recoilAngle < 0.0f)
+            {
+                weapon.recoilAngle = 0.0f;
+            }
+        }
+        //----------------------------------------------------------------------------------
 
         // UI
         //----------------------------------------------------------------------------------
@@ -202,10 +232,23 @@ int main(void)
             ClearBackground(BLANK);
 
             BeginMode3D(screenCamera);
-                Vector3 weaponPosition = Vector3Add(weaponSway, weaponPositionOffset);
+                Vector3 weaponPosition = Vector3Add(Vector3Add(weaponSway, weaponPositionOffset), weapon.currentOffset);
 
+                
+                Quaternion qY = QuaternionFromAxisAngle((Vector3){0, 1, 0}, DEG2RAD * weaponRotationAngle);
+                
+                Quaternion qX = QuaternionFromAxisAngle(weapon.recoilDirection, DEG2RAD * weapon.recoilAngle);
 
-                DrawModelEx(weapon.model, weaponPosition, weaponRotationAxis, weaponRotationAngle, weaponSize, WHITE);
+                // комбинируем кватернионы
+                Quaternion qFinal = QuaternionMultiply(qX, qY);
+
+                // переводим в ось+угол
+                Vector3 axis;
+                float angle;
+                QuaternionToAxisAngle(qFinal, &axis, &angle);
+
+                // теперь рисуем одним вызовом
+                DrawModelEx(weapon.model, weaponPosition, axis, RAD2DEG * angle, weaponSize, WHITE);
             EndMode3D();
         EndTextureMode();
 
