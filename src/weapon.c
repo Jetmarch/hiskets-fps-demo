@@ -1,0 +1,107 @@
+#include "weapon.h"
+
+FPSWeapon CreateFPSWeapon(Model model, Vector3 offset)
+{
+    FPSWeapon weapon;
+    weapon.model = model;
+    weapon.baseOffset = offset;
+    weapon.currentOffset = offset;
+    weapon.recoilDirection = (Vector3) {0.5f, 0.1f, 0.0f};
+    weapon.defaultRotationAxis = (Vector3) {0.0f, 1.0f, 0.0f};
+    weapon.defaultSize = (Vector3) {0.02f, 0.02f, 0.02f};
+    weapon.defaultRotationAngle = 180.0f;
+    weapon.swayDirection = (Vector3) {0.0f, 0.0f, 0.0f};
+    weapon.positionOffset = (Vector3) {0.2f, -0.5f, -0.5f};
+    weapon.swayTime = 0.0f;
+    weapon.swaySpeed = 7.0f;
+    weapon.currentSwayAmount - 0.0f;
+    weapon.recoilTimer = 0.0f;
+    weapon.recoilStrength = 1.0f;
+    weapon.recoilPositionRecover = 45.0f;
+    weapon.recoilAngleRecover = 7.5f;
+    weapon.recoilAngle = 0.0f;
+    weapon.isShooting = false;
+    return weapon;
+}
+
+
+static void UpdateWeaponSway(FPSWeapon* weapon, Vector3 playerVelocity)
+{
+    bool isMoving = Vector3Length(playerVelocity) > VELOCITY_TRESHOLD_FOR_WEAPON_SWAY;
+
+    if(isMoving)
+    {
+        weapon->currentSwayAmount = Clamp(weapon->currentSwayAmount + GetFrameTime() * weapon->swaySpeed, MIN_WEAPON_SWAY_AMOUNT, MAX_WEAPON_SWAY_AMOUNT);
+    }
+    else 
+    {
+        weapon->currentSwayAmount = Clamp(weapon->currentSwayAmount - GetFrameTime() * weapon->swaySpeed, MIN_WEAPON_SWAY_AMOUNT, MAX_WEAPON_SWAY_AMOUNT);
+    }
+
+    weapon->swayTime += GetFrameTime() * weapon->swaySpeed;
+
+    float swayX = sinf(weapon->swayTime * DEFAULT_SWAY_TIME_X_MOD) * DEFAULT_SWAY_X_AMOUNT * weapon->currentSwayAmount;
+    float swayY = cosf(weapon->swayTime * DEFAULT_SWAY_TIME_Y_MOD) * DEFAULT_SWAY_Y_AMOUNT * weapon->currentSwayAmount;
+
+    weapon->swayDirection = (Vector3) {swayX, swayY, 0.0f};
+}
+
+static void UpdateWeaponRecoil(FPSWeapon* weapon)
+{
+    if(weapon->isShooting)
+    {
+        weapon->recoilAngle += weapon->recoilStrength;
+    }
+
+    if(weapon->recoilAngle > 0.0f)
+    {
+        weapon->recoilAngle -= GetFrameTime() * weapon->recoilAngleRecover * weapon->recoilAngle;
+        if(weapon->recoilAngle < 0.0f)
+        {
+            weapon->recoilAngle = 0.0f;
+        }
+    }
+} 
+
+void UpdateWeapon(FPSWeapon *weapon, Camera camera, Vector3 playerVelocity)
+{
+    if (weapon->isShooting)
+    {
+        weapon->recoilTimer += GetFrameTime();
+        
+        float recoilProgress = weapon->recoilTimer / 0.1f;
+        if (recoilProgress < 1.0f)
+        {
+            weapon->currentOffset.z = weapon->baseOffset.z + weapon->recoilStrength * sinf(recoilProgress * PI);
+        }
+        else
+        {
+            weapon->currentOffset.z = Lerp(weapon->currentOffset.z, weapon->baseOffset.z, GetFrameTime() * weapon->recoilPositionRecover) ;
+            weapon->isShooting = false;
+            weapon->recoilTimer = 0.0f;
+        }
+    }
+
+    UpdateWeaponSway(weapon, playerVelocity);
+    UpdateWeaponRecoil(weapon);
+}
+
+void DrawWeapon(FPSWeapon weapon)
+{
+    Vector3 weaponPosition = Vector3Add(Vector3Add(weapon.swayDirection, weapon.positionOffset), weapon.currentOffset);
+                
+    Quaternion qY = QuaternionFromAxisAngle((Vector3){0, 1, 0}, DEG2RAD * weapon.defaultRotationAngle);
+    
+    Quaternion qX = QuaternionFromAxisAngle(weapon.recoilDirection, DEG2RAD * weapon.recoilAngle);
+
+
+    Quaternion qFinal = QuaternionMultiply(qX, qY);
+
+
+    Vector3 axis;
+    float angle;
+    QuaternionToAxisAngle(qFinal, &axis, &angle);
+
+    // теперь рисуем одним вызовом
+    DrawModelEx(weapon.model, weaponPosition, axis, RAD2DEG * angle, weapon.defaultSize, WHITE);
+}

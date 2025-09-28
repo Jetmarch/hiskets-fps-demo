@@ -1,84 +1,8 @@
 
 #include "player.h"
 #include "level.h"
+#include "weapon.h"
 
-typedef struct {
-    Model model;
-    Vector3 baseOffset;
-    Vector3 currentOffset;
-    Vector3 recoilDirection;
-    float recoilTimer;
-    float recoilStrength;
-    float recoilPositionRecover;
-    float recoilAngleRecover;
-    float recoilAngle;
-    bool isShooting;
-} FPSWeapon;
-
-FPSWeapon CreateFPSWeapon(Model model, Vector3 offset)
-{
-    FPSWeapon weapon;
-    weapon.model = model;
-    weapon.baseOffset = offset;
-    weapon.currentOffset = offset;
-    weapon.recoilDirection = (Vector3){0.5f, 0.1f, 0.0f};
-    weapon.recoilTimer = 0.0f;
-    weapon.recoilStrength = 1.0f;
-    weapon.recoilPositionRecover = 45.0f;
-    weapon.recoilAngleRecover = 7.5f;
-    weapon.recoilAngle = 0.0f;
-    weapon.isShooting = false;
-    return weapon;
-}
-
-void UpdateWeapon(FPSWeapon *weapon, Camera camera)
-{
-    if (weapon->isShooting)
-    {
-        weapon->recoilTimer += GetFrameTime();
-        
-        float recoilProgress = weapon->recoilTimer / 0.1f;
-        if (recoilProgress < 1.0f)
-        {
-            weapon->currentOffset.z = weapon->baseOffset.z + weapon->recoilStrength * sinf(recoilProgress * PI);
-        }
-        else
-        {
-            weapon->currentOffset.z = Lerp(weapon->currentOffset.z, weapon->baseOffset.z, GetFrameTime() * weapon->recoilPositionRecover) ;
-            weapon->isShooting = false;
-            weapon->recoilTimer = 0.0f;
-        }
-    }
-}
-
-Vector3 GetCameraEulerAngles(Camera camera)
-{
-    Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, camera.up));
-    Vector3 up = Vector3CrossProduct(right, forward);
-    
-    Vector3 angles;
-    
-    //yaw
-    angles.y = atan2f(forward.x, forward.z);
-    //pitch
-    angles.x = asinf(-forward.y);
-    //roll
-    angles.z = 0.0f;
-    
-    return angles;
-}
-
-void DrawFPSWeapon(FPSWeapon weapon, Camera camera)
-{
-    Vector3 weaponPos = Vector3Add(camera.position, weapon.currentOffset);
-
-    // Vector3 cameraAngles = GetCameraEulerAngles(camera);
-    // weapon.model.transform = MatrixRotateXYZ((Vector3){ DEG2RAD*cameraAngles.x, DEG2RAD*cameraAngles.y, DEG2RAD*cameraAngles.z });
-
-
-    DrawModelEx(weapon.model, weaponPos, camera.target, 0.0f, (Vector3) {0.01f, 0.01f, 0.01f}, GRAY);
-}
 
 int main(void)
 {
@@ -138,16 +62,6 @@ int main(void)
 
     bool isFlyCam = false;
 
-    float weaponSwayTime = 0.0f;
-    float weaponSwaySpeed = 7.0f;
-    float maxWeaponSwayAmount = 1.0f;
-    float currentWeaponSwayAmount = 0.0f;
-    float weaponSwayVelocityTreshhold = 0.7f;
-
-    Vector3 weaponRotationAxis = {0.0f, 1.0f, 0.0f};
-    float weaponRotationAngle = 180.0f;
-    Vector3 weaponSize = {0.02f, 0.02f, 0.02f};
-
     while (!WindowShouldClose())
     {
 		// Update state
@@ -185,46 +99,10 @@ int main(void)
             UpdateCamera(&worldCamera, CAMERA_FREE);
         }
 
-        UpdateWeapon(&weapon, worldCamera);
+        UpdateWeapon(&weapon, worldCamera, playerBody.velocity);
 
 
-        //Weapon sway
-        //----------------------------------------------------------------------------------
-        bool isMoving = Vector3Length(playerBody.velocity) > weaponSwayVelocityTreshhold;
-
-        if(isMoving)
-        {
-            currentWeaponSwayAmount = Clamp(currentWeaponSwayAmount + GetFrameTime() * weaponSwaySpeed, 0.0f, maxWeaponSwayAmount);
-        }
-        else 
-        {
-            currentWeaponSwayAmount = Clamp(currentWeaponSwayAmount - GetFrameTime() * weaponSwaySpeed, 0.0f, maxWeaponSwayAmount);
-        }
-
-        weaponSwayTime += GetFrameTime() * weaponSwaySpeed;
-
-        float swayX = sinf(weaponSwayTime) * 0.1f * currentWeaponSwayAmount;
-        float swayY = cosf(weaponSwayTime * 2.0f) * 0.05f * currentWeaponSwayAmount;
-
-        Vector3 weaponSway = (Vector3) {swayX, swayY, 0.0f};
-        //----------------------------------------------------------------------------------
-
-        //Weapon recoil
-        //----------------------------------------------------------------------------------
-        if(weapon.isShooting)
-        {
-            weapon.recoilAngle += weapon.recoilStrength;
-        }
-
-        if(weapon.recoilAngle > 0.0f)
-        {
-            weapon.recoilAngle -= GetFrameTime() * weapon.recoilAngleRecover * weapon.recoilAngle;
-            if(weapon.recoilAngle < 0.0f)
-            {
-                weapon.recoilAngle = 0.0f;
-            }
-        }
-        //----------------------------------------------------------------------------------
+        
 
         // UI
         //----------------------------------------------------------------------------------
@@ -232,23 +110,7 @@ int main(void)
             ClearBackground(BLANK);
 
             BeginMode3D(screenCamera);
-                Vector3 weaponPosition = Vector3Add(Vector3Add(weaponSway, weaponPositionOffset), weapon.currentOffset);
-
-                
-                Quaternion qY = QuaternionFromAxisAngle((Vector3){0, 1, 0}, DEG2RAD * weaponRotationAngle);
-                
-                Quaternion qX = QuaternionFromAxisAngle(weapon.recoilDirection, DEG2RAD * weapon.recoilAngle);
-
-                // комбинируем кватернионы
-                Quaternion qFinal = QuaternionMultiply(qX, qY);
-
-                // переводим в ось+угол
-                Vector3 axis;
-                float angle;
-                QuaternionToAxisAngle(qFinal, &axis, &angle);
-
-                // теперь рисуем одним вызовом
-                DrawModelEx(weapon.model, weaponPosition, axis, RAD2DEG * angle, weaponSize, WHITE);
+                DrawWeapon(weapon);
             EndMode3D();
         EndTextureMode();
 
