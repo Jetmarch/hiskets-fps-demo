@@ -3,6 +3,7 @@
 
 typedef struct {
     Model model;
+    Texture2D texture;
     Vector3 baseOffset;
     Vector3 currentOffset;
     Vector3 recoilDirection;
@@ -23,9 +24,10 @@ typedef struct {
 } FPSWeapon;
 
 
-FPSWeapon CreateFPSWeapon(Model model, Vector3 offset);
+FPSWeapon CreateFPSWeapon(const char* modelFilename, const char* textureFilename);
 void UpdateWeapon(FPSWeapon *weapon, Camera camera, Vector3 playerVelocity);
 void DrawWeapon(FPSWeapon weapon);
+void DestroyWeapon(FPSWeapon weapon);
 
 
 #define DEFAULT_SWAY_TIME_X_MOD 1.0f
@@ -37,3 +39,4 @@ void DrawWeapon(FPSWeapon weapon);
 #define MIN_WEAPON_SWAY_AMOUNT 0.0f
 
 #define VELOCITY_TRESHOLD_FOR_WEAPON_SWAY 0.7f
+#define POSITION_OFFSET (Vector3){0.2f, -0.5f, -0.5f}

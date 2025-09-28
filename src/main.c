@@ -21,8 +21,7 @@ int main(void)
     };
 
     Camera screenCamera = { 0 };
-
-    screenCamera.position = (Vector3){ 0.0f, 0.0f, 3.0f }; // чуть дальше
+    screenCamera.position = (Vector3){ 0.0f, 0.0f, 3.0f };
     screenCamera.target   = (Vector3){ 0.0f, 0.0f, 0.0f };
     screenCamera.up       = (Vector3){ 0.0f, 1.0f, 0.0f };
     screenCamera.fovy = 60.0f;
@@ -31,24 +30,20 @@ int main(void)
 
     SetTargetFPS(60);
 
+    //Draw walls
     Vector3 wallSize = (Vector3){ 16.0f, 16.0f,  16.0f };
     Mesh wallMesh = GenMeshCube(wallSize.x, wallSize.y, wallSize.z);
     Model wallModel = LoadModelFromMesh(wallMesh);
     Texture2D wallTexture = LoadTexture("resources/textures/damaged_plaster_diff_1k.jpg");
     wallModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = wallTexture;
-
     Vector3 wallPos  = (Vector3){ 0.0f, 8.0f, -32.0f };
 
+    FPSWeapon weapon = CreateFPSWeapon(
+        "resources/models/mp5.obj", 
+        "resources/textures/weapons/mp5.png"
+    );
 
-    Model weaponModel = LoadModel("resources/models/mp5.obj");
-    Texture2D weaponTexture = LoadTexture("resources/textures/weapons/mp5.png");
-    weaponModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = weaponTexture;
-    Vector3 weaponPositionOffset = (Vector3){0.2f, -0.5f, -0.5f};
-    Quaternion weaponRotation;
-    Vector3 weaponForwardVector = (Vector3){0.0f, 0.0f, 1.0f};
-
-    FPSWeapon weapon = CreateFPSWeapon(weaponModel, weaponPositionOffset);
-
+    //Input
 	bool isMouseWasPressed = false;
 	Ray shootRay;
 	RayCollision shootCollision;
@@ -58,8 +53,10 @@ int main(void)
 				screenHeight/ 2
 	};
     
+    //UI texture
     RenderTexture2D weaponRT = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
+    //Debug
     bool isFlyCam = false;
 
     while (!WindowShouldClose())
@@ -100,10 +97,7 @@ int main(void)
         }
 
         UpdateWeapon(&weapon, worldCamera, playerBody.velocity);
-
-
         
-
         // UI
         //----------------------------------------------------------------------------------
         BeginTextureMode(weaponRT);
@@ -123,7 +117,6 @@ int main(void)
             BeginMode3D(worldCamera);
                 DrawLevel();
 
-				// DrawCube(towerPos, towerSize.x, towerSize.y, towerSize.z, GRAY);
 				DrawCubeWires(wallPos, wallSize.x, wallSize.y, wallSize.z, MAROON);
 
 				if(shootCollision.hit)
@@ -132,8 +125,6 @@ int main(void)
 					DrawLine3D(shootCollision.point, Vector3Add(shootCollision.point, Vector3Scale(shootCollision.normal, 0.5f)), GREEN);
 				}
                 
-
-                // DrawModel(weaponModel, weaponPosition, 0.01f, WHITE);
                 DrawModel(wallModel, wallPos, 1.0f, WHITE);
             EndMode3D();
 
@@ -167,8 +158,9 @@ int main(void)
     CloseWindow();
 
     UnloadTexture(wallTexture);
-    UnloadModel(weaponModel);
     UnloadModel(wallModel);
+
+    DestroyWeapon(weapon);
 
 
     return 0;

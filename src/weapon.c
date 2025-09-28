@@ -1,11 +1,16 @@
 #include "weapon.h"
 
-FPSWeapon CreateFPSWeapon(Model model, Vector3 offset)
+FPSWeapon CreateFPSWeapon(const char* modelFilename, const char* textureFilename)
 {
+    Model model = LoadModel(modelFilename);
+    Texture2D texture = LoadTexture(textureFilename);
+
+    model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+
     FPSWeapon weapon;
     weapon.model = model;
-    weapon.baseOffset = offset;
-    weapon.currentOffset = offset;
+    weapon.baseOffset = POSITION_OFFSET;
+    weapon.currentOffset = POSITION_OFFSET;
     weapon.recoilDirection = (Vector3) {0.5f, 0.1f, 0.0f};
     weapon.defaultRotationAxis = (Vector3) {0.0f, 1.0f, 0.0f};
     weapon.defaultSize = (Vector3) {0.02f, 0.02f, 0.02f};
@@ -102,6 +107,11 @@ void DrawWeapon(FPSWeapon weapon)
     float angle;
     QuaternionToAxisAngle(qFinal, &axis, &angle);
 
-    // теперь рисуем одним вызовом
     DrawModelEx(weapon.model, weaponPosition, axis, RAD2DEG * angle, weapon.defaultSize, WHITE);
+}
+
+void DestroyWeapon(FPSWeapon weapon)
+{
+    UnloadModel(weapon.model);
+    UnloadTexture(weapon.texture);
 }
