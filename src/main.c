@@ -49,24 +49,25 @@ Vector3 GetCameraEulerAngles(Camera camera)
     
     Vector3 angles;
     
+    //yaw
     angles.y = atan2f(forward.x, forward.z);
-    
+    //pitch
     angles.x = asinf(-forward.y);
-    
+    //roll
     angles.z = 0.0f;
     
     return angles;
 }
 
-void DrawFPSWeapon(FPSWeapon *weapon, Camera3D camera)
+void DrawFPSWeapon(FPSWeapon weapon, Camera camera)
 {
-    Vector3 cameraAngles = GetCameraEulerAngles(camera);
+    Vector3 weaponPos = Vector3Add(camera.position, weapon.currentOffset);
 
-    Vector3 weaponPos = Vector3Add(camera.position, weapon->currentOffset);
+    // Vector3 cameraAngles = GetCameraEulerAngles(camera);
+    // weapon.model.transform = MatrixRotateXYZ((Vector3){ DEG2RAD*cameraAngles.x, DEG2RAD*cameraAngles.y, DEG2RAD*cameraAngles.z });
 
-    weapon->model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * cameraAngles.x, DEG2RAD * cameraAngles.y, cameraAngles.z});
 
-    DrawModel(weapon->model, weaponPos, 0.01f, GRAY);
+    DrawModelEx(weapon.model, weaponPos, camera.target, 0.0f, (Vector3) {0.01f, 0.01f, 0.01f}, GRAY);
 }
 
 int main(void)
@@ -76,16 +77,21 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "raylib [core] example - 3d camera fps");
 
-    Camera camera = { 0 };
-    camera.fovy = 60.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
-    camera.position = (Vector3){
+    Camera worldCamera = { 0 };
+    worldCamera.fovy = 60.0f;
+    worldCamera.projection = CAMERA_PERSPECTIVE;
+    worldCamera.position = (Vector3){
         playerBody.position.x,
         playerBody.position.y + (BOTTOM_HEIGHT + headLerp),
         playerBody.position.z,
     };
 
-    UpdateCameraFPS(&camera);
+    Camera screenCamera = { 0 };
+
+    screenCamera.position = (Vector3){ 0.0f, 0.0f, 3.0f }; // чуть дальше
+    screenCamera.target   = (Vector3){ 0.0f, 0.0f, 0.0f };
+    screenCamera.up       = (Vector3){ 0.0f, 1.0f, 0.0f };
+    screenCamera.fovy = 60.0f;
 
     DisableCursor();
 
@@ -103,7 +109,9 @@ int main(void)
     Model weaponModel = LoadModel("resources/models/mp5.obj");
     Texture2D weaponTexture = LoadTexture("resources/textures/weapons/mp5.png");
     weaponModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = weaponTexture;
-    Vector3 weaponPositionOffset = (Vector3){0.2f, -0.35f, -0.4f};
+    Vector3 weaponPositionOffset = (Vector3){0.2f, -0.5f, -0.5f};
+    Quaternion weaponRotation;
+    Vector3 weaponForwardVector = (Vector3){0.0f, 0.0f, 1.0f};
 
     FPSWeapon weapon = CreateFPSWeapon(weaponModel, weaponPositionOffset);
 
@@ -111,11 +119,26 @@ int main(void)
 	Ray shootRay;
 	RayCollision shootCollision;
 
+    Vector2 screenCenter = (Vector2) {
+				screenWidth / 2,
+				screenHeight/ 2
+	};
+    
+    RenderTexture2D weaponRT = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
     bool isFlyCam = false;
-    //--------------------------------------------------------------------------------------
 
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    float weaponSwayTime = 0.0f;
+    float weaponSwaySpeed = 7.0f;
+    float maxWeaponSwayAmount = 1.0f;
+    float currentWeaponSwayAmount = 0.0f;
+    float weaponSwayVelocityTreshhold = 0.7f;
+
+    Vector3 weaponRotationAxis = {0.0f, 1.0f, 0.0f};
+    float weaponRotationAngle = 180.0f;
+    Vector3 weaponSize = {0.02f, 0.02f, 0.02f};
+
+    while (!WindowShouldClose())
     {
 		// Update state
         //----------------------------------------------------------------------------------
@@ -123,12 +146,7 @@ int main(void)
 		if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
 		{
 			isMouseWasPressed = !isMouseWasPressed;
-			TraceLog(LOG_INFO, "Mouse was pressed, yeah");
-			Vector2 screenCenter = (Vector2) {
-				screenWidth / 2,
-				screenHeight/ 2
-			};
-			shootRay = GetScreenToWorldRay(screenCenter, camera);
+			shootRay = GetScreenToWorldRay(screenCenter, worldCamera);
 
 			shootCollision = GetRayCollisionBox(shootRay, (BoundingBox){
                 (Vector3){ -wallSize.x/2 + wallPos.x, -wallSize.y/2 + wallPos.y, -wallSize.z/2 + wallPos.z }, 
@@ -150,16 +168,46 @@ int main(void)
 
         if(!isFlyCam)
         {
-		    UpdatePlayer(&camera, &playerBody);
+		    UpdatePlayer(&worldCamera, &playerBody);
         }
         else 
         {
-            UpdateCamera(&camera, CAMERA_FREE);
+            UpdateCamera(&worldCamera, CAMERA_FREE);
         }
 
-        UpdateWeapon(&weapon, camera);
+        UpdateWeapon(&weapon, worldCamera);
 
-		
+        bool isMoving = Vector3Length(playerBody.velocity) > weaponSwayVelocityTreshhold;
+
+        if(isMoving)
+        {
+            currentWeaponSwayAmount = Clamp(currentWeaponSwayAmount + GetFrameTime() * weaponSwaySpeed, 0.0f, maxWeaponSwayAmount);
+        }
+        else 
+        {
+            currentWeaponSwayAmount = Clamp(currentWeaponSwayAmount - GetFrameTime() * weaponSwaySpeed, 0.0f, maxWeaponSwayAmount);
+        }
+
+        weaponSwayTime += GetFrameTime() * weaponSwaySpeed;
+
+        float swayX = sinf(weaponSwayTime) * 0.1f * currentWeaponSwayAmount;
+        float swayY = cosf(weaponSwayTime * 2.0f) * 0.05f * currentWeaponSwayAmount;
+
+        Vector3 weaponSway = (Vector3) {swayX, swayY, 0.0f};
+        
+
+        // UI
+        //----------------------------------------------------------------------------------
+        BeginTextureMode(weaponRT);
+            ClearBackground(BLANK);
+
+            BeginMode3D(screenCamera);
+                Vector3 weaponPosition = Vector3Add(weaponSway, weaponPositionOffset);
+
+
+                DrawModelEx(weapon.model, weaponPosition, weaponRotationAxis, weaponRotationAngle, weaponSize, WHITE);
+            EndMode3D();
+        EndTextureMode();
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -167,7 +215,7 @@ int main(void)
 
             ClearBackground(GRAY);
 
-            BeginMode3D(camera);
+            BeginMode3D(worldCamera);
                 DrawLevel();
 
 				// DrawCube(towerPos, towerSize.x, towerSize.y, towerSize.z, GRAY);
@@ -182,11 +230,16 @@ int main(void)
 
                 // DrawModel(weaponModel, weaponPosition, 0.01f, WHITE);
                 DrawModel(wallModel, wallPos, 1.0f, WHITE);
-
-                DrawFPSWeapon(&weapon, camera);
-
-
             EndMode3D();
+
+            int weaponX = GetScreenWidth() / 2 + 100;
+            int weaponY = GetScreenHeight() / 2 - 200;
+
+            DrawTextureRec(weaponRT.texture,
+                (Rectangle){0, 0, (float)weaponRT.texture.width, -(float)weaponRT.texture.height},
+                (Vector2){0, 0},
+                WHITE
+            );
 
             DrawRectangle(5, 5, 330, 90, Fade(SKYBLUE, 0.5f));
             DrawRectangleLines(5, 5, 330, 90, BLUE);
