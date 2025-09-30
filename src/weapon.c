@@ -13,10 +13,10 @@ FPSWeapon CreateFPSWeapon(const char* modelFilename, const char* textureFilename
     weapon.currentOffset = POSITION_OFFSET;
     weapon.recoilDirection = (Vector3) {0.5f, 0.1f, 0.0f};
     weapon.defaultRotationAxis = (Vector3) {0.0f, 1.0f, 0.0f};
-    weapon.defaultSize = (Vector3) {0.02f, 0.02f, 0.02f};
+    weapon.defaultSize = (Vector3) {0.027f, 0.027f, 0.027f};
     weapon.defaultRotationAngle = 180.0f;
     weapon.swayDirection = (Vector3) {0.0f, 0.0f, 0.0f};
-    weapon.positionOffset = (Vector3) {0.2f, -0.5f, -0.5f};
+    weapon.positionOffset = (Vector3) {0.0f, -0.5f, -0.1f};
     weapon.swayTime = 0.0f;
     weapon.swaySpeed = 7.0f;
     weapon.currentSwayAmount - 0.0f;
