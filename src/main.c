@@ -11,24 +11,11 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "raylib [core] example - 3d camera fps");
 
-    Camera worldCamera = { 0 };
-    worldCamera.fovy = 60.0f;
-    worldCamera.projection = CAMERA_PERSPECTIVE;
-    worldCamera.position = (Vector3){
-        playerBody.position.x,
-        playerBody.position.y + (BOTTOM_HEIGHT + headLerp),
-        playerBody.position.z,
-    };
-
-    Camera screenCamera = { 0 };
-    screenCamera.position = (Vector3){ 0.0f, 0.0f, 3.0f };
-    screenCamera.target   = (Vector3){ 0.0f, 0.0f, 0.0f };
-    screenCamera.up       = (Vector3){ 0.0f, 1.0f, 0.0f };
-    screenCamera.fovy = 60.0f;
-
     DisableCursor();
 
     SetTargetFPS(60);
+
+    Player player = CreatePlayer();
 
     //Draw walls
     Vector3 wallSize = (Vector3){ 16.0f, 16.0f,  16.0f };
@@ -67,7 +54,7 @@ int main(void)
 		if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
 		{
 			isMouseWasPressed = !isMouseWasPressed;
-			shootRay = GetScreenToWorldRay(screenCenter, worldCamera);
+			shootRay = GetScreenToWorldRay(screenCenter, player.worldCamera);
 
 			shootCollision = GetRayCollisionBox(shootRay, (BoundingBox){
                 (Vector3){ -wallSize.x/2 + wallPos.x, -wallSize.y/2 + wallPos.y, -wallSize.z/2 + wallPos.z }, 
@@ -89,21 +76,21 @@ int main(void)
 
         if(!isFlyCam)
         {
-		    UpdatePlayer(&worldCamera, &playerBody);
+		    UpdatePlayer(&player.worldCamera, &player);
         }
         else 
         {
-            UpdateCamera(&worldCamera, CAMERA_FREE);
+            UpdateCamera(&player.worldCamera, CAMERA_FREE);
         }
 
-        UpdateWeapon(&weapon, worldCamera, playerBody.velocity);
+        UpdateWeapon(&weapon, player.worldCamera, player.velocity);
         
         // UI
         //----------------------------------------------------------------------------------
         BeginTextureMode(weaponRT);
             ClearBackground(BLANK);
 
-            BeginMode3D(screenCamera);
+            BeginMode3D(player.hudCamera);
                 DrawWeapon(weapon);
             EndMode3D();
         EndTextureMode();
@@ -114,7 +101,7 @@ int main(void)
 
             ClearBackground(GRAY);
 
-            BeginMode3D(worldCamera);
+            BeginMode3D(player.worldCamera);
                 DrawLevel();
 
 				DrawCubeWires(wallPos, wallSize.x, wallSize.y, wallSize.z, MAROON);
@@ -143,7 +130,7 @@ int main(void)
             DrawText("Camera controls:", 15, 15, 10, BLACK);
             DrawText("- Move keys: W, A, S, D, Space, Left-Ctrl", 15, 30, 10, BLACK);
             DrawText("- Look around: arrow keys or mouse", 15, 45, 10, BLACK);
-            DrawText(TextFormat("- Velocity Len: (%06.3f)", Vector2Length((Vector2){ playerBody.velocity.x, playerBody.velocity.z })), 15, 60, 10, BLACK);
+            DrawText(TextFormat("- Velocity Len: (%06.3f)", Vector2Length((Vector2){ player.velocity.x, player.velocity.z })), 15, 60, 10, BLACK);
 			DrawText(TextFormat("- FPS: (%i)", GetFPS()), 15, 75, 10, BLACK);
 
 

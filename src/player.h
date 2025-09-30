@@ -25,20 +25,21 @@
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
 //----------------------------------------------------------------------------------
-// Body structure
+// Player structure
 typedef struct {
     Vector3 position;
     Vector3 velocity;
+    Camera worldCamera;
+    Camera hudCamera;
     Vector3 dir;
     bool isGrounded;
-} Body;
+} Player;
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition
 //----------------------------------------------------------------------------------
 static Vector2 sensitivity = { 0.001f, 0.001f };
 
-static Body playerBody = { 0 };
 static Vector2 lookRotation = { 0 };
 static float headTimer = 0.0f;
 static float walkLerp = 0.0f;
@@ -48,6 +49,7 @@ static Vector2 lean = { 0 };
 //----------------------------------------------------------------------------------
 // Module Functions Declaration
 //----------------------------------------------------------------------------------
-void UpdatePlayer(Camera *camera, Body *body);
+Player CreatePlayer();
+void UpdatePlayer(Camera *camera, Player *body);
 void UpdateCameraFPS(Camera *camera);
-void UpdateBody(Body *body, float rot, char side, char forward, bool jumpPressed, bool crouchHold);
+void UpdateBody(Player *body, float rot, char side, char forward, bool jumpPressed, bool crouchHold);

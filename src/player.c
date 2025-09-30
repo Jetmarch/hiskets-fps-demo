@@ -1,6 +1,32 @@
 #include "player.h"
 
-void UpdatePlayer(Camera *camera, Body *body)
+Player CreatePlayer()
+{
+    Player player = { 0 };
+    
+
+    Camera worldCamera = { 0 };
+    worldCamera.fovy = 60.0f;
+    worldCamera.projection = CAMERA_PERSPECTIVE;
+    worldCamera.position = (Vector3){
+        player.position.x,
+        player.position.y + (BOTTOM_HEIGHT + headLerp),
+        player.position.z,
+    };
+
+    Camera hudCamera = { 0 };
+    hudCamera.position = (Vector3){ 0.0f, 0.0f, 3.0f };
+    hudCamera.target   = (Vector3){ 0.0f, 0.0f, 0.0f };
+    hudCamera.up       = (Vector3){ 0.0f, 1.0f, 0.0f };
+    hudCamera.fovy = 60.0f;
+
+    player.worldCamera = worldCamera;
+    player.hudCamera = hudCamera;
+    
+    return player;
+}
+
+void UpdatePlayer(Camera *camera, Player *body)
 {
 	// Update
 	//----------------------------------------------------------------------------------
@@ -91,7 +117,7 @@ void UpdateCameraFPS(Camera *camera)
 // Module Functions Definition
 //----------------------------------------------------------------------------------
 // Update body considering current world state
-void UpdateBody(Body *body, float rot, char side, char forward, bool jumpPressed, bool crouchHold)
+void UpdateBody(Player *body, float rot, char side, char forward, bool jumpPressed, bool crouchHold)
 {
     Vector2 input = (Vector2){ (float)side, (float)-forward };
 
