@@ -1,7 +1,10 @@
 
+#define RAYLIB_NUKLEAR_IMPLEMENTATION
 #include "player.h"
 #include "level.h"
 #include "weapon.h"
+#include "raylib-nuklear.h"
+
 
 
 int main(void)
@@ -11,7 +14,9 @@ int main(void)
 
     InitWindow(screenWidth, screenHeight, "raylib [core] example - 3d camera fps");
 
-    DisableCursor();
+    struct nk_context *ctx = InitNuklear(20);
+
+    
 
     SetTargetFPS(60);
 
@@ -46,55 +51,88 @@ int main(void)
     //Debug
     bool isFlyCam = false;
 
+    bool isCursorDisabled = false;
+
+
     while (!WindowShouldClose())
     {
 		// Update state
         //----------------------------------------------------------------------------------
+
+        if(IsKeyDown(KEY_K))
+        {
+            isCursorDisabled = !isCursorDisabled;
+
+            if(isCursorDisabled)
+            {
+                DisableCursor();
+            }
+            else 
+            {
+                EnableCursor();
+            }
+        }
+
+        if(isCursorDisabled) 
+        {
         
-		if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-		{
-			isMouseWasPressed = !isMouseWasPressed;
-			shootRay = GetScreenToWorldRay(screenCenter, player.worldCamera);
+            if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+            {
+                isMouseWasPressed = !isMouseWasPressed;
+                shootRay = GetScreenToWorldRay(screenCenter, player.worldCamera);
 
-			shootCollision = GetRayCollisionBox(shootRay, (BoundingBox){
-                (Vector3){ -wallSize.x/2 + wallPos.x, -wallSize.y/2 + wallPos.y, -wallSize.z/2 + wallPos.z }, 
-                (Vector3){  wallSize.x/2 + wallPos.x,  wallSize.y/2 + wallPos.y,  wallSize.z/2 + wallPos.z } 
-            });
+                shootCollision = GetRayCollisionBox(shootRay, (BoundingBox){
+                    (Vector3){ -wallSize.x/2 + wallPos.x, -wallSize.y/2 + wallPos.y, -wallSize.z/2 + wallPos.z }, 
+                    (Vector3){  wallSize.x/2 + wallPos.x,  wallSize.y/2 + wallPos.y,  wallSize.z/2 + wallPos.z } 
+                });
 
-			if(shootCollision.hit)
-			{
-				TraceLog(LOG_INFO, "Hitted that box!");
-			}
+                if(shootCollision.hit)
+                {
+                    TraceLog(LOG_INFO, "Hitted that box!");
+                }
 
-            weapon.isShooting = true;
-		}
+                weapon.isShooting = true;
+            }
 
-        if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
-        {
-            weapon.isAiming = true;
+            if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            {
+                weapon.isAiming = true;
+            }
+
+            if(IsMouseButtonReleased(MOUSE_RIGHT_BUTTON))
+            {
+                weapon.isAiming = false;
+            }
+
+
+            if(IsKeyPressed(KEY_T))
+            {
+                isFlyCam = !isFlyCam;
+            }
+
+            if(!isFlyCam)
+            {
+                UpdatePlayer(&player.worldCamera, &player);
+            }
+            else 
+            {
+                UpdateCamera(&player.worldCamera, CAMERA_FREE);
+            }
+
+            UpdateWeapon(&weapon, player.worldCamera, player.velocity);
+
         }
 
-        if(IsMouseButtonReleased(MOUSE_RIGHT_BUTTON))
-        {
-            weapon.isAiming = false;
-        }
+        UpdateNuklear(ctx);
 
-
-        if(IsKeyPressed(KEY_T))
-        {
-            isFlyCam = !isFlyCam;
+        if (nk_begin(ctx, "Nuklear", nk_rect(100, 100, 220, 220),
+                NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
+            nk_layout_row_static(ctx, 50, 150, 1);
+            if (nk_button_label(ctx, "Button")) {
+                // Button was clicked!
+            }
         }
-
-        if(!isFlyCam)
-        {
-		    UpdatePlayer(&player.worldCamera, &player);
-        }
-        else 
-        {
-            UpdateCamera(&player.worldCamera, CAMERA_FREE);
-        }
-
-        UpdateWeapon(&weapon, player.worldCamera, player.velocity);
+        nk_end(ctx);
         
         // UI
         //----------------------------------------------------------------------------------
@@ -148,6 +186,9 @@ int main(void)
 			DrawText(TextFormat("- IsMouseWasPressed: (%d)", isMouseWasPressed), 15, 110, 10, BLACK);
 			DrawText(TextFormat("- IsAiming: (%d)", weapon.isAiming), 15, 135, 10, BLACK);
 
+
+
+            DrawNuklear(ctx);
 			
 
         EndDrawing();
@@ -160,6 +201,8 @@ int main(void)
     UnloadModel(wallModel);
 
     DestroyWeapon(weapon);
+
+    UnloadNuklear(ctx);
 
 
     return 0;
