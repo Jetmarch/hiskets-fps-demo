@@ -11,6 +11,7 @@ typedef struct {
     Vector3 defaultSize;
     Vector3 swayDirection;
     Vector3 positionOffset;
+    Vector3 aimingPositionOffset;
     float defaultRotationAngle;
     float swayTime;
     float swaySpeed;
@@ -21,6 +22,7 @@ typedef struct {
     float recoilAngleRecover;
     float recoilAngle;
     bool isShooting;
+    bool isAiming;
 } FPSWeapon;
 
 

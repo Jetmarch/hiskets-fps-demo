@@ -17,6 +17,7 @@ FPSWeapon CreateFPSWeapon(const char* modelFilename, const char* textureFilename
     weapon.defaultRotationAngle = 180.0f;
     weapon.swayDirection = (Vector3) {0.0f, 0.0f, 0.0f};
     weapon.positionOffset = (Vector3) {0.0f, -0.5f, -0.1f};
+    weapon.aimingPositionOffset = (Vector3) {0.0f, 0.1f, 0.0f};
     weapon.swayTime = 0.0f;
     weapon.swaySpeed = 7.0f;
     weapon.currentSwayAmount - 0.0f;
@@ -26,6 +27,7 @@ FPSWeapon CreateFPSWeapon(const char* modelFilename, const char* textureFilename
     weapon.recoilAngleRecover = 7.5f;
     weapon.recoilAngle = 0.0f;
     weapon.isShooting = false;
+    weapon.isAiming = false;
     return weapon;
 }
 
@@ -93,7 +95,7 @@ void UpdateWeapon(FPSWeapon *weapon, Camera camera, Vector3 playerVelocity)
 
 void DrawWeapon(FPSWeapon weapon)
 {
-    Vector3 weaponPosition = Vector3Add(Vector3Add(weapon.swayDirection, weapon.positionOffset), weapon.currentOffset);
+    Vector3 currentWeaponPosition = {0};
                 
     Quaternion qY = QuaternionFromAxisAngle((Vector3){0, 1, 0}, DEG2RAD * weapon.defaultRotationAngle);
     
@@ -102,12 +104,20 @@ void DrawWeapon(FPSWeapon weapon)
 
     Quaternion qFinal = QuaternionMultiply(qX, qY);
 
-
     Vector3 axis;
     float angle;
     QuaternionToAxisAngle(qFinal, &axis, &angle);
 
-    DrawModelEx(weapon.model, weaponPosition, axis, RAD2DEG * angle, weapon.defaultSize, WHITE);
+    if(weapon.isAiming)
+    {
+        currentWeaponPosition = Vector3Add(Vector3Add(weapon.swayDirection, weapon.aimingPositionOffset), weapon.currentOffset);
+    }
+    else
+    {
+        currentWeaponPosition = Vector3Add(Vector3Add(weapon.swayDirection, weapon.positionOffset), weapon.currentOffset);
+    }
+
+    DrawModelEx(weapon.model, currentWeaponPosition, axis, RAD2DEG * angle, weapon.defaultSize, WHITE);
 }
 
 void DestroyWeapon(FPSWeapon weapon)

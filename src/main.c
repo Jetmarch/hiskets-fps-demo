@@ -69,6 +69,17 @@ int main(void)
             weapon.isShooting = true;
 		}
 
+        if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+        {
+            weapon.isAiming = true;
+        }
+
+        if(IsMouseButtonReleased(MOUSE_RIGHT_BUTTON))
+        {
+            weapon.isAiming = false;
+        }
+
+
         if(IsKeyPressed(KEY_T))
         {
             isFlyCam = !isFlyCam;
@@ -135,6 +146,7 @@ int main(void)
 
 
 			DrawText(TextFormat("- IsMouseWasPressed: (%d)", isMouseWasPressed), 15, 110, 10, BLACK);
+			DrawText(TextFormat("- IsAiming: (%d)", weapon.isAiming), 15, 135, 10, BLACK);
 
 			
 
