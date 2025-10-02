@@ -51,7 +51,7 @@ int main(void)
     //Debug
     bool isFlyCam = false;
 
-    bool isCursorDisabled = false;
+    bool isCursorDisabled = true;
 
 
     while (!WindowShouldClose())
@@ -59,7 +59,7 @@ int main(void)
 		// Update state
         //----------------------------------------------------------------------------------
 
-        if(IsKeyDown(KEY_K))
+        if(IsKeyReleased(KEY_K))
         {
             isCursorDisabled = !isCursorDisabled;
 
@@ -72,6 +72,8 @@ int main(void)
                 EnableCursor();
             }
         }
+
+        
 
         if(isCursorDisabled) 
         {
