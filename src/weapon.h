@@ -1,7 +1,7 @@
 #include "raylib.h"
 #include "raymath.h"
 
-typedef struct {
+struct FPSWeapon {
     Model model;
     Texture2D texture;
     Vector3 baseOffset;
@@ -23,8 +23,9 @@ typedef struct {
     float recoilAngle;
     bool isShooting;
     bool isAiming;
-} FPSWeapon;
+};
 
+typedef struct FPSWeapon FPSWeapon;
 
 FPSWeapon CreateFPSWeapon(const char* modelFilename, const char* textureFilename);
 void UpdateWeapon(FPSWeapon *weapon, Camera camera, Vector3 playerVelocity);
