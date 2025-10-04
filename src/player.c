@@ -1,3 +1,5 @@
+#ifndef PLAYER_C
+#define PLAYER_C
 #include "player.h"
 
 Player CreatePlayer()
@@ -178,3 +180,5 @@ void UpdateBody(Player *body, float rot, char side, char forward, bool jumpPress
         body->isGrounded = true; // Enable jumping
     }
 }
+
+#endif //PLAYER_C

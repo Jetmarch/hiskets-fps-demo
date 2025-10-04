@@ -1,3 +1,6 @@
+#ifndef UTILS_C
+#define UTILS_C
+
 #include "utils.h"
 
 Vector3 GetCameraEulerAngles(Camera camera)
@@ -17,3 +20,5 @@ Vector3 GetCameraEulerAngles(Camera camera)
     
     return angles;
 }
+
+#endif //UTILS_C

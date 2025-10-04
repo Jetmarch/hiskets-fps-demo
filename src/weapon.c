@@ -1,3 +1,6 @@
+#ifndef WEAPON_C
+#define WEAPON_C
+
 #include "weapon.h"
 
 FPSWeapon CreateFPSWeapon(const char* modelFilename, const char* textureFilename)
@@ -125,3 +128,5 @@ void DestroyWeapon(FPSWeapon weapon)
     UnloadModel(weapon.model);
     UnloadTexture(weapon.texture);
 }
+
+#endif //WEAPON_C

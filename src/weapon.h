@@ -1,3 +1,7 @@
+
+#ifndef WEAPON_H
+#define WEAPON_H
+
 #include "raylib.h"
 #include "raymath.h"
 
@@ -43,3 +47,5 @@ void DestroyWeapon(FPSWeapon weapon);
 
 #define VELOCITY_TRESHOLD_FOR_WEAPON_SWAY 0.7f
 #define POSITION_OFFSET (Vector3){0.2f, -0.5f, -0.5f}
+
+#endif //WEAPON_H

@@ -1,3 +1,6 @@
+#ifndef PLAYER_H
+#define PLAYER_H
+
 #include "raylib.h"
 #include "raymath.h"
 
@@ -53,3 +56,5 @@ Player CreatePlayer();
 void UpdatePlayer(Camera *camera, Player *body);
 void UpdateCameraFPS(Camera *camera);
 void UpdateBody(Player *body, float rot, char side, char forward, bool jumpPressed, bool crouchHold);
+
+#endif //PLAYER_H

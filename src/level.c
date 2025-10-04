@@ -1,3 +1,6 @@
+#ifndef LEVEL_C
+#define LEVEL_C
+
 #include "level.h"
 
 
@@ -46,3 +49,5 @@ void DrawLevel(void)
     // Red sun
     DrawSphere((Vector3){ 300.0f, 300.0f, 0.0f }, 100.0f, (Color){ 255, 0, 0, 255 });
 }
+
+#endif //LEVEL_C
